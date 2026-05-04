@@ -50,7 +50,10 @@ def main():
         tensorboard_log=tb_log_dir,
     )
 
-    print(f"Training {args.algo.upper()} on {args.env} for {args.timesteps:,} timesteps (seed={args.seed})...")
+    print(
+        f"Training {args.algo.upper()} on {args.env} for {args.timesteps:,} "
+        f"timesteps (seed={args.seed})..."
+    )
     print(f"TensorBoard logs: {tb_log_dir}")
     print(f"Run: tensorboard --logdir {tb_log_dir}\n")
 
