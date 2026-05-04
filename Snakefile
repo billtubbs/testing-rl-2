@@ -1,5 +1,5 @@
 ENVS = ["CartPole-BT-vL-v1"]
-ALGOS = ["a2c", "ppo", "sac", "td3"]
+ALGOS = ["a2c", "ppo", "sac", "td3", "tqc"]
 SEEDS = list(range(5))
 TIMESTEPS = 100_000
 

@@ -7,13 +7,14 @@ import gym_CartPole_BT  # noqa: F401 — registers CartPole-BT environments
 from stable_baselines3 import A2C, PPO, SAC, TD3
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.callbacks import EvalCallback
+from sb3_contrib import TQC
 
 DEFAULT_ENV_ID = "CartPole-BT-vL-v1"
 TOTAL_TIMESTEPS = 1_000_000
 EVAL_FREQ = 5_000
 N_EVAL_EPISODES = 10
 
-ALGOS = {"a2c": A2C, "ppo": PPO, "sac": SAC, "td3": TD3}
+ALGOS = {"a2c": A2C, "ppo": PPO, "sac": SAC, "td3": TD3, "tqc": TQC}
 
 
 def main():

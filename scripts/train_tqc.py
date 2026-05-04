@@ -1,9 +1,9 @@
-"""Train a TD3 agent on CartPole-BT-vL-v1."""
+"""Train a TQC agent on CartPole-BT-vL-v1."""
 
 import os
 import gymnasium as gym
 import gym_CartPole_BT  # noqa: F401 — registers CartPole-BT environments
-from stable_baselines3 import TD3
+from sb3_contrib import TQC
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.callbacks import EvalCallback
 
@@ -13,9 +13,9 @@ TOTAL_TIMESTEPS = 1_000_000
 EVAL_FREQ = 5_000
 N_EVAL_EPISODES = 10
 
-LOG_DIR = "results/logs/td3"
+LOG_DIR = "results/logs/tqc"
 TB_LOG_DIR = "results/tb_logs"
-MODEL_DIR = "results/models/td3"
+MODEL_DIR = "results/models/tqc"
 
 
 def main():
@@ -33,7 +33,7 @@ def main():
         verbose=1,
     )
 
-    model = TD3(
+    model = TQC(
         "MlpPolicy",
         env,
         seed=SEED,
@@ -42,14 +42,14 @@ def main():
     )
 
     print(
-        f"Training TD3 on {ENV_ID} for {TOTAL_TIMESTEPS:,} "
+        f"Training TQC on {ENV_ID} for {TOTAL_TIMESTEPS:,} "
         f"timesteps (seed={SEED})..."
     )
     print(f"TensorBoard logs: {TB_LOG_DIR}")
     print(f"Run: tensorboard --logdir {TB_LOG_DIR}\n")
 
     model.learn(total_timesteps=TOTAL_TIMESTEPS, callback=eval_callback)
-    model.save(os.path.join(MODEL_DIR, "td3_final"))
+    model.save(os.path.join(MODEL_DIR, "tqc_final"))
 
     env.close()
     eval_env.close()
