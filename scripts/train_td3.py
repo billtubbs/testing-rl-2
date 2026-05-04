@@ -41,7 +41,10 @@ def main():
         tensorboard_log=TB_LOG_DIR,
     )
 
-    print(f"Training TD3 on {ENV_ID} for {TOTAL_TIMESTEPS:,} timesteps (seed={SEED})...")
+    print(
+        f"Training TD3 on {ENV_ID} for {TOTAL_TIMESTEPS:,} "
+        f"timesteps (seed={SEED})..."
+    )
     print(f"TensorBoard logs: {TB_LOG_DIR}")
     print(f"Run: tensorboard --logdir {TB_LOG_DIR}\n")
 

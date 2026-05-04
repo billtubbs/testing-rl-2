@@ -9,7 +9,7 @@ from stable_baselines3.common.callbacks import EvalCallback
 
 ENV_ID = "CartPole-BT-vL-v1"
 SEED = 0
-TOTAL_TIMESTEPS = 100_000
+TOTAL_TIMESTEPS = 1_000_000
 EVAL_FREQ = 5_000
 N_EVAL_EPISODES = 10
 
@@ -41,7 +41,10 @@ def main():
         tensorboard_log=TB_LOG_DIR,
     )
 
-    print(f"Training PPO on {ENV_ID} for {TOTAL_TIMESTEPS:,} timesteps...")
+    print(
+        f"Training PPO on {ENV_ID} for {TOTAL_TIMESTEPS:,} "
+        f"timesteps (seed={SEED})..."
+    )
     print(f"TensorBoard logs: {TB_LOG_DIR}")
     print(f"Run: tensorboard --logdir {TB_LOG_DIR}\n")
 
