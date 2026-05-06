@@ -40,11 +40,15 @@ def main():
     parser.add_argument("--algo", choices=ALGOS, default="ppo")
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--timesteps", type=int, default=TOTAL_TIMESTEPS)
-    parser.add_argument("--name", default=None,
-                        help="Experiment name, used as the results subdirectory. "
-                             "Defaults to the algorithm name.")
     parser.add_argument(
-        "--restart", action="store_true",
+        "--name",
+        default=None,
+        help="Experiment name, used as the results subdirectory. "
+        "Defaults to the algorithm name.",
+    )
+    parser.add_argument(
+        "--restart",
+        action="store_true",
         help="Start from scratch even if a checkpoint exists.",
     )
     args = parser.parse_args()
@@ -72,7 +76,11 @@ def main():
 
     checkpoint_path, checkpoint_ts = find_latest_checkpoint(model_dir)
 
-    if not args.restart and checkpoint_path and args.timesteps <= checkpoint_ts:
+    if (
+        not args.restart
+        and checkpoint_path
+        and args.timesteps <= checkpoint_ts
+    ):
         print(
             f"Warning: requested {args.timesteps:,} timesteps but checkpoint already "
             f"has {checkpoint_ts:,}. Restarting from scratch."
@@ -81,24 +89,38 @@ def main():
 
     if args.restart or checkpoint_path is None:
         if args.restart and checkpoint_path:
-            print(f"Restarting (ignoring checkpoint at {checkpoint_ts:,} timesteps).")
+            print(
+                f"Restarting (ignoring checkpoint at {checkpoint_ts:,} timesteps)."
+            )
         model = ALGOS[args.algo](
-            "MlpPolicy", env, seed=args.seed, verbose=1, tensorboard_log=tb_log_dir,
+            "MlpPolicy",
+            env,
+            seed=args.seed,
+            verbose=1,
+            tensorboard_log=tb_log_dir,
         )
         remaining = args.timesteps
         reset_num_timesteps = True
     else:
-        print(f"Resuming from {checkpoint_path} ({checkpoint_ts:,} timesteps done).")
+        print(
+            f"Resuming from {checkpoint_path} ({checkpoint_ts:,} timesteps done)."
+        )
         model = ALGOS[args.algo].load(
-            checkpoint_path, env=env, verbose=1, tensorboard_log=tb_log_dir,
+            checkpoint_path,
+            env=env,
+            verbose=1,
+            tensorboard_log=tb_log_dir,
         )
         remaining = args.timesteps - checkpoint_ts
         reset_num_timesteps = False
 
     print(
         f"Training {args.algo.upper()} on {args.env} for {remaining:,} timesteps"
-        + (f" (resuming to {args.timesteps:,} total, seed={args.seed})..."
-           if not reset_num_timesteps else f" (seed={args.seed})...")
+        + (
+            f" (resuming to {args.timesteps:,} total, seed={args.seed})..."
+            if not reset_num_timesteps
+            else f" (seed={args.seed})..."
+        )
     )
     print(f"TensorBoard logs: {tb_log_dir}")
     print(f"Run: tensorboard --logdir {tb_log_dir}\n")
