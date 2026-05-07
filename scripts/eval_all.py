@@ -1,10 +1,12 @@
 """Evaluate all trained models and baselines, saving results to CSV.
 
-Runs each trained model from experiments.yaml with EVAL_SEEDS (10 seeds),
+Runs each trained model from experiments.yaml with --n-seeds evaluation seeds (default 10),
 plus LQR (full-state envs) and LQG (p2 envs) baselines.
 Output: results/eval/combined.csv
 """
 
+import argparse
+import logging
 import os
 import sys
 import yaml
@@ -15,6 +17,9 @@ import gym_CartPole_BT  # noqa: F401
 from stable_baselines3 import A2C, PPO, SAC, TD3
 from sb3_contrib import TQC
 
+logging.getLogger("stable_baselines3").setLevel(logging.WARNING)
+logging.getLogger("sb3_contrib").setLevel(logging.WARNING)
+
 _SCRIPTS_DIR = os.path.dirname(os.path.abspath(__file__))
 _PROJECT_DIR = os.path.dirname(_SCRIPTS_DIR)
 sys.path.insert(0, _SCRIPTS_DIR)
@@ -22,7 +27,6 @@ from lqr_agent import LQRAgent
 from lqg_agent import LQGAgent
 
 ALGOS = {"a2c": A2C, "ppo": PPO, "sac": SAC, "td3": TD3, "tqc": TQC}
-EVAL_SEEDS = range(100, 110)
 N_EVAL_STEPS = 100  # max_episode_steps for these envs
 
 
@@ -47,6 +51,7 @@ def run_episode(env, agent, eval_seed):
     terminated = truncated = False
     episode_start = True
     state = None
+    n_steps = 0
     while not (terminated or truncated):
         action, state = agent.predict(
             obs,
@@ -57,12 +62,13 @@ def run_episode(env, agent, eval_seed):
         obs, reward, terminated, truncated, _ = env.step(action)
         total_reward += reward
         episode_start = False
-    return total_reward
+        n_steps += 1
+    return total_reward, n_steps
 
 
 def load_model(algo_name, model_path, env):
     cls = ALGOS[algo_name]
-    return cls.load(model_path, env=env)
+    return cls.load(model_path, env=env, verbose=0)
 
 
 def find_model_path(exp_name, seed):
@@ -92,6 +98,11 @@ def make_baseline(env):
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--n-seeds", type=int, default=10, help="Number of evaluation seeds")
+    args = parser.parse_args()
+    eval_seeds = range(100, 100 + args.n_seeds)
+
     yaml_path = os.path.join(_PROJECT_DIR, "experiments.yaml")
     with open(yaml_path) as f:
         experiments = yaml.safe_load(f)["experiments"]
@@ -100,6 +111,8 @@ def main():
     os.makedirs(results_dir, exist_ok=True)
 
     records = []
+
+    print("Running evaluation experiments...")
 
     for exp_name, exp in experiments.items():
         env_id = exp["env"]
@@ -112,39 +125,45 @@ def main():
             model_path = find_model_path(exp_name, train_seed)
 
             if not os.path.exists(model_path):
-                print(f"Missing: {model_path} — skipping")
+                print(f"  Missing: {model_path} — skipping")
                 continue
 
             model = load_model(algo_name, model_path, env)
 
-            for eval_seed in EVAL_SEEDS:
-                total_reward = run_episode(env, model, eval_seed)
+            for eval_seed in eval_seeds:
+                total_reward, n_steps = run_episode(env, model, eval_seed)
                 records.append(
                     {
                         "experiment": exp_name,
                         "env": env_id,
                         "algo": algo_name,
                         "train_seed": train_seed,
+                        "timesteps": timesteps,
                         "eval_seed": eval_seed,
+                        "n_steps": n_steps,
                         "total_reward": total_reward,
                     }
                 )
+            print(f"  {exp_name}  {env_id}  {algo_name}  train_seed={train_seed}  n={args.n_seeds}")
 
         # Baseline
         baseline = make_baseline(env)
         baseline_algo = "lqg" if is_partial_obs(env) else "lqr"
-        for eval_seed in EVAL_SEEDS:
-            total_reward = run_episode(env, baseline, eval_seed)
+        for eval_seed in eval_seeds:
+            total_reward, n_steps = run_episode(env, baseline, eval_seed)
             records.append(
                 {
                     "experiment": exp_name,
                     "env": env_id,
                     "algo": baseline_algo,
                     "train_seed": None,
+                    "timesteps": None,
                     "eval_seed": eval_seed,
+                    "n_steps": n_steps,
                     "total_reward": total_reward,
                 }
             )
+        print(f"  {exp_name}  {env_id}  {baseline_algo}  n={args.n_seeds}")
 
         env.close()
 

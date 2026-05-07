@@ -7,15 +7,25 @@ experiments:
   p2-dL-tqc:
     env: CartPole-BT-p2-dL-v1
     algo: tqc
-    timesteps: [200000, 200000, 500000, 200000, 200000]
+    timesteps: [200000, 200000, 1000000, 200000, 200000]
     seeds: [0, 1, 2, 3, 4]
   x2-dL-tqc:
     env: CartPole-BT-x2-dL-v1
     algo: tqc
-    timesteps: [200000, 200000, 200000, 500000, 200000]
+    timesteps: [200000, 200000, 200000, 1000000, 200000]
     seeds: [0, 1, 2, 3, 4]
   dL-vL-nL-tqc:
     env: CartPole-BT-dL-vL-nL-v1
+    algo: tqc
+    timesteps: [500000, 200000, 200000, 200000, 200000]
+    seeds: [0, 1, 2, 3, 4]
+  p2-dL-nL-tqc:
+    env: CartPole-BT-p2-dL-nL-v1
+    algo: tqc
+    timesteps: [200000, 200000, 200000, 200000, 200000]
+    seeds: [0, 1, 2, 3, 4]
+  x2-dL-nL-tqc:
+    env: CartPole-BT-x2-dL-nL-v1
     algo: tqc
     timesteps: [200000, 200000, 200000, 200000, 200000]
     seeds: [0, 1, 2, 3, 4]
