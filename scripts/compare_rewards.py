@@ -3,10 +3,10 @@
 Goal state: x = 0 (cart centred), theta = 0 (pole upright).
 
 Rewards:
-  1. Cosine            — 4·(cos(θ)+1) / (x²+1) − 8           [Lorentzian x-factor, range [−8, 0]]
-  2. Sum-sqr           — -(x² + θ²)                          [current CartPole-BT style]
-  3. Sq. dist.         — -‖pole_tip − goal_tip‖²              [squared tip distance]
-  4. Weighted sum-sqr  — -(x² + L²·θ²)                       [q2=L², matches sq. dist. curvature at origin]
+  1. Cosine           — 4·(cos(θ)+1) / (x²+1) − 8  [Lorentzian, range [−8, 0]]
+  2. Sum-sqr          — -(x² + θ²)                  [current CartPole-BT style]
+  3. Sq. dist.        — -‖pole_tip − goal_tip‖²      [squared tip distance]
+  4. Weighted sum-sqr — -(x² + L²·θ²)               [q2=L², matches sq. dist.]
 """
 
 import os
@@ -21,15 +21,23 @@ THETA_MAX_DEG = 360.0  # full-range angle limit (degrees)
 # --- Reward functions (higher = better; goal at x=0, theta=0) ---------------
 
 
-def r_cosine(x, theta):
-    return 8 * (np.cos(theta) + 1) / 2 / (x**2 + 1) - 8
-
-
 def r_sumsqr(x, theta):
+    """Negative sum of squared deviations from goal (original CartPole-BT)."""
     return -(x**2 + theta**2)
 
 
+def r_sinsqr(x, theta):
+    """Respects that theta is a circular variable."""
+    return -(x**2) - 4 * L**2 * np.sin(theta / 2) ** 2
+
+
+def r_weighted_sinsqr(x, theta):
+    """Like r_sumsqr near origin; respects that theta is circular."""
+    return -(x**2) - 4 * np.sin(theta / 2) ** 2
+
+
 def r_sqrdist(x, theta):
+    """Negative squared distance from pole tip to goal position."""
     tip_x = x + L * np.sin(theta)
     tip_y = L * np.cos(theta)
     return -(tip_x**2 + (tip_y - L) ** 2)
@@ -37,23 +45,35 @@ def r_sqrdist(x, theta):
 
 def r_weighted_sumsqr(x, theta):
     # q2 = L² matches the curvature of r_sqrdist at the origin
-    return -(x**2 + L**2 * theta**2)
+    return -(x**2) - L**2 * theta**2
 
 
 rewards = {
-    "Cosine / (x²+1)": r_cosine,
     "Sum-squared diff.": r_sumsqr,
-    "Squared distance": r_sqrdist,
-    f"Weighted sum-sqd. diff.": r_weighted_sumsqr,
+    "Weighted sin-squared": r_weighted_sinsqr,
+    # "Sin-squared": r_sinsqr,
+    # "Squared distance": r_sqrdist,
+    # "Weighted sum-sqr. diff.": r_weighted_sumsqr,
 }
 colors = {
-    "Cosine / (x²+1)": "tab:blue",
-    "Sum-squared diff.": "tab:orange",
-    "Squared distance": "tab:green",
-    f"Weighted sum-sqd. diff.": "tab:red",
+    "Sum-squared diff.": "tab:blue",
+    "Weighted sin-squared": "tab:orange",
+    "Sin-squared": "tab:green",
+    "Squared distance": "tab:red",
+    "Weighted sum-sqr. diff.": "tab:purple",
 }
 
 # --- Figure generation ------------------------------------------------------
+
+
+def nice_degree_ticks(theta_max_deg, max_ticks=9):
+    """Tick positions at round degree intervals within ±theta_max_deg."""
+    nice_steps = [1, 2, 5, 10, 15, 30, 45, 90, 180]
+    for step in nice_steps:
+        if round(2 * theta_max_deg / step) + 1 <= max_ticks:
+            break
+    lo = np.ceil(-theta_max_deg / step) * step
+    return np.arange(lo, theta_max_deg + 0.01 * step, step)
 
 
 def make_figure(scale, out_path, ylim=(None, None)):
@@ -72,7 +92,6 @@ def make_figure(scale, out_path, ylim=(None, None)):
             )
         ax.axvline(0.0, color="k", lw=0.6, ls=":", alpha=0.5)
         ax.set_ylim(ylim)
-        ax.set_ylabel("Reward")
         ax.grid(True, alpha=0.25)
         ax.legend(fontsize=9)
         if annot:
@@ -102,7 +121,9 @@ def make_figure(scale, out_path, ylim=(None, None)):
     thetas = np.linspace(-theta_max, theta_max, N)
     ax = axes[0, 0]
     add_curves(ax, np.degrees(thetas), np.zeros(N), thetas)
+    ax.set_xticks(nice_degree_ticks(theta_max_deg))
     ax.set_xlabel("θ (degrees)")
+    ax.set_ylabel("Reward")
     ax.set_title("(i)  θ varies,  x = 0")
 
     # (ii) x varies, theta = 0
@@ -115,19 +136,23 @@ def make_figure(scale, out_path, ylim=(None, None)):
     # (iii) both vary, same sign: x = z*x_max, theta = z*theta_max
     z = np.linspace(-1.0, 1.0, N)
     annot_iii = (
-        f"x = $z$ × {x_max} m\nθ = $z$ × {theta_max_deg:.0f}°\n(same sign)"
+        f"x = $z$ × {x_max} m\nθ = $z$ × {{theta_max_deg:.0f}}°\n(same sign)"
     )
     ax = axes[1, 0]
     add_curves(ax, z, z * x_max, z * theta_max, annot=annot_iii)
     ax.set_xlabel("$z$")
-    ax.set_title("(iii)  x and θ same sign")
+    ax.set_ylabel("Reward")
+    ax.set_title("(iii)  x and θ vary with same sign")
 
     # (iv) both vary, opposite sign: x = z*x_max, theta = -z*theta_max
-    annot_iv = f"x = $z$ × {x_max} m\nθ = −$z$ × {theta_max_deg:.0f}°\n(opposite sign)"
+    annot_iv = (
+        f"x = $z$ × {x_max} m\n"
+        f"θ = −$z$ × {theta_max_deg:.0f}°\n(opposite sign)"
+    )
     ax = axes[1, 1]
     add_curves(ax, z, z * x_max, -z * theta_max, annot=annot_iv)
     ax.set_xlabel("$z$")
-    ax.set_title("(iv)  x and θ opposite sign")
+    ax.set_title("(iv)  x and θ vary with opposite sign")
 
     plt.tight_layout()
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
@@ -138,9 +163,11 @@ def make_figure(scale, out_path, ylim=(None, None)):
 # --- Generate figures --------------------------------------------------------
 
 make_figure(
-    scale=0.05, out_path="results/compare_rewards_zoom.png", ylim=(-0.5, None)
+    scale=30 / 360,
+    out_path="results/compare_rewards_zoom.png",
+    ylim=(-0.4, None),
 )
 make_figure(
-    scale=1.0, out_path="results/compare_rewards.png", ylim=(-40, None)
+    scale=1.0, out_path="results/compare_rewards.png", ylim=(-30, None)
 )
 plt.show()
