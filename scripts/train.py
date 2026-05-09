@@ -8,18 +8,20 @@ import gym_CartPole_BT  # noqa: F401 — registers CartPole-BT environments
 from stable_baselines3 import A2C, PPO, SAC, TD3
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.callbacks import EvalCallback
+from stable_baselines3.common.evaluation import evaluate_policy
 from sb3_contrib import TQC
 
 DEFAULT_ENV_ID = "CartPole-BT-vL-v1"
 TOTAL_TIMESTEPS = 1_000_000
 EVAL_FREQ = 5_000
-N_EVAL_EPISODES = 10
+N_EVAL_EPISODES = 20
 
 ALGOS = {"a2c": A2C, "ppo": PPO, "sac": SAC, "td3": TD3, "tqc": TQC}
 
 
 def find_latest_checkpoint(model_dir):
-    """Return (path, timesteps) of the highest-timestep checkpoint, or (None, 0)."""
+    """Return (path, timesteps) of the highest-timestep checkpoint, or
+    (None, 0)."""
     checkpoints = []
     for path in glob.glob(os.path.join(model_dir, "*ts.zip")):
         stem = os.path.splitext(os.path.basename(path))[0]  # e.g. "150000ts"
@@ -82,15 +84,16 @@ def main():
         and args.timesteps <= checkpoint_ts
     ):
         print(
-            f"Warning: requested {args.timesteps:,} timesteps but checkpoint already "
-            f"has {checkpoint_ts:,}. Restarting from scratch."
+            f"Warning: requested {args.timesteps:,} timesteps but checkpoint "
+            f"already has {checkpoint_ts:,}. Restarting from scratch."
         )
         args.restart = True
 
     if args.restart or checkpoint_path is None:
         if args.restart and checkpoint_path:
             print(
-                f"Restarting (ignoring checkpoint at {checkpoint_ts:,} timesteps)."
+                f"Restarting (ignoring checkpoint at {checkpoint_ts:,} "
+                "timesteps)."
             )
         model = ALGOS[args.algo](
             "MlpPolicy",
@@ -103,7 +106,8 @@ def main():
         reset_num_timesteps = True
     else:
         print(
-            f"Resuming from {checkpoint_path} ({checkpoint_ts:,} timesteps done)."
+            f"Resuming from {checkpoint_path} ({checkpoint_ts:,} "
+            "timesteps done)."
         )
         model = ALGOS[args.algo].load(
             checkpoint_path,
@@ -124,6 +128,24 @@ def main():
     )
     print(f"TensorBoard logs: {tb_log_dir}")
     print(f"Run: tensorboard --logdir {tb_log_dir}\n")
+
+    if not reset_num_timesteps:
+        best_model_path = os.path.join(model_dir, "best_model.zip")
+        if os.path.exists(best_model_path):
+            best_model = ALGOS[args.algo].load(
+                os.path.join(model_dir, "best_model"), env=eval_env
+            )
+            mean_reward, _ = evaluate_policy(
+                best_model,
+                eval_env,
+                n_eval_episodes=N_EVAL_EPISODES,
+                deterministic=eval_callback.deterministic,
+            )
+            eval_callback.best_mean_reward = float(mean_reward)
+            print(
+                f"Previous best_model.zip mean reward: {mean_reward:.2f} "
+                "(threshold for overwrite)"
+            )
 
     model.learn(
         total_timesteps=remaining,

@@ -99,7 +99,9 @@ def make_baseline(env):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--n-seeds", type=int, default=10, help="Number of evaluation seeds")
+    parser.add_argument(
+        "--n-seeds", type=int, default=100, help="Number of evaluation seeds"
+    )
     args = parser.parse_args()
     eval_seeds = range(100, 100 + args.n_seeds)
 
@@ -144,7 +146,9 @@ def main():
                         "total_reward": total_reward,
                     }
                 )
-            print(f"  {exp_name}  {env_id}  {algo_name}  train_seed={train_seed}  n={args.n_seeds}")
+            print(
+                f"  {exp_name}  {env_id}  {algo_name}  train_seed={train_seed}  n={args.n_seeds}"
+            )
 
         # Baseline
         baseline = make_baseline(env)
