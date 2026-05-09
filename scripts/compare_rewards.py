@@ -3,7 +3,7 @@
 Goal state: x = 0 (cart centred), theta = 0 (pole upright).
 
 Rewards:
-  1. Cosine            — (cos(θ)+1) × cos(x·π/2) − 2         [hardmaru style, scaled to [−4, 0]]
+  1. Cosine            — 4·(cos(θ)+1) / (x²+1) − 8           [Lorentzian x-factor, range [−8, 0]]
   2. Sum-sqr           — -(x² + θ²)                          [current CartPole-BT style]
   3. Sq. dist.         — -‖pole_tip − goal_tip‖²              [squared tip distance]
   4. Weighted sum-sqr  — -(x² + L²·θ²)                       [q2=L², matches sq. dist. curvature at origin]
@@ -22,8 +22,7 @@ THETA_MAX_DEG = 360.0  # full-range angle limit (degrees)
 
 
 def r_cosine(x, theta):
-    # Shifted and scaled from [−1, 1] to [−16, 0] to match squared distance range
-    return 8 * ((np.cos(theta) + 1) / 2 * np.cos(x * np.pi / 2)) - 8
+    return 8 * (np.cos(theta) + 1) / 2 / (x**2 + 1) - 8
 
 
 def r_sumsqr(x, theta):
@@ -42,16 +41,16 @@ def r_weighted_sumsqr(x, theta):
 
 
 rewards = {
-    "Cosine": r_cosine,
+    "Cosine / (x²+1)": r_cosine,
     "Sum-squared diff.": r_sumsqr,
     "Squared distance": r_sqrdist,
-    f"Weighted ($q_2=L^2$)": r_weighted_sumsqr,
+    f"Weighted sum-sqd. diff.": r_weighted_sumsqr,
 }
 colors = {
-    "Cosine": "tab:blue",
+    "Cosine / (x²+1)": "tab:blue",
     "Sum-squared diff.": "tab:orange",
     "Squared distance": "tab:green",
-    f"Weighted ($q_2=L^2$)": "tab:red",
+    f"Weighted sum-sqd. diff.": "tab:red",
 }
 
 # --- Figure generation ------------------------------------------------------
@@ -139,9 +138,9 @@ def make_figure(scale, out_path, ylim=(None, None)):
 # --- Generate figures --------------------------------------------------------
 
 make_figure(
-    scale=0.125, out_path="results/compare_rewards_zoom.png"
-)  # x ∈ ±0.25 m, θ ∈ ±45°
+    scale=0.05, out_path="results/compare_rewards_zoom.png", ylim=(-0.5, None)
+)
 make_figure(
-    scale=1.0, out_path="results/compare_rewards.png", ylim=(-50, None)
-)  # x ∈ ±2 m,    θ ∈ ±360°
+    scale=1.0, out_path="results/compare_rewards.png", ylim=(-40, None)
+)
 plt.show()
