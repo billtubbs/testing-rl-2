@@ -29,3 +29,8 @@ experiments:
     algo: tqc
     timesteps: [500000, 200000, 200000, 200000, 200000]
     seeds: [0, 1, 2, 3, 4]
+  r2-a1-dL-nL-tqc:
+    env: CartPole-BT-r2-a1-dL-nL-v1
+    algo: tqc
+    timesteps: [200000, 1000000, 200000, 200000, 200000]
+    seeds: [0, 1, 2, 3, 4]
