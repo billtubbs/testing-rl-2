@@ -18,6 +18,7 @@ Experiments are run using [Stable Baselines3](https://stable-baselines3.readthed
 | TD3 | Off-policy | Twin Delayed DDPG |
 | TQC | Off-policy | Truncated Quantile Critics (sb3-contrib) |
 | LQR | Benchmark | Linear Quadratic Regulator (analytical, no training) |
+| LQG | Benchmark | Linear Quadratic Gaussian (analytical, no training) |
 
 ## Installation
 
